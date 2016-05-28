@@ -1,18 +1,14 @@
-#******************************************
-# File: makefile
-# Author: Elberth Adrian Garro Sanchez [2014088081]
-# Utility: simple makefile for xml_analyzer
-#******************************************
+#********************************************************
+#* Instituto Tecnológico de Costa Rica                	*
+#* Escuela de Computación                               *
+#* Arquitectura de Computadores                         *
+#* Archivo: Makefile			           				*
+#* Profesor: Erick Hernandez                            *
+#* Estudiantes: Liza Chaves 2013016573                  *
+#* 				Marisol González 2014160604				*
+#* 				Izcar Muñoz 2015069773					*
+#********************************************************
 
-#program to use as the assembler
-ASM=nasm
-#flags for the assember
-ASM_F=-f elf64
-#program to use as linker
-LINKER=ld
-#link executable
-xml_analyzer: xml_analyzer.o
-	@$(LINKER) -o xml_analyzer xml_analyzer.o
-#assemble source code
-xml_analyzer.o: xml_analyzer.asm
-	@$(ASM) $(ASM_F) -o xml_analyzer.o xml_analyzer.asm
+wc: wc.asm
+	@nasm -f elf64 -o wc.o wc.asm
+	@ld -o wc wc.o
