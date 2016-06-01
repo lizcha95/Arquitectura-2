@@ -1,0 +1,263 @@
+;********************************************************
+;* Instituto Tecnológico de Costa Rica                	*
+;* Escuela de Computación                               *
+;* Arquitectura de Computadores                         *
+;* Archivo: wc.asm (Word Count Function)  				*
+;* Profesor: Erick Hernandez                            *
+;* Estudiantes: Liza Chaves 2013016573                  *
+;* 				Marisol González 2014160604				*
+;* 				Izcar Muñoz 2015069773					*
+;********************************************************
+
+
+; include macros library
+;**********************************************************************
+
+%include 'macros.mac'
+
+
+
+; section containing initialized data
+;**********************************************************************
+
+section .data
+	;; numeric constants
+	MAX_FILE_SZ equ 2048 
+	;; two dots
+	DOTS db ':'
+	;; new line
+	NEW_LINE db 10
+
+section .bss
+	in_file resb MAX_FILE_SZ
+	line resb linelen
+	line2 resb linelen 
+	linelen equ 1000
+	MATRIZ: resb MATRIZLEN 	;matriz donde se iran almacenando todas las lineas 
+						    ;en orden alfabetico 
+	MATRIZLEN equ 1000000
+	MatrizMax equ 1000		; tamaño de cada linea de la matriz 
+	strNum resb strNumlen
+	strNumlen equ 3
+	bandera resb 1
+	contador equ 1024
+	
+
+
+;; **********************************************************************
+;; section containing code
+;; **********************************************************************
+section .text
+	global _start
+_start:
+	input_file:
+		read in_file, MAX_FILE_SZ
+		xor r10, r10 ; posicion de la matriz
+		call ProcesarArchivo
+		write MATRIZ, MATRIZLEN
+
+		
+			
+	exit
+		 
+	ProcesarArchivo:
+
+		mov r9, rax
+		xor r8, r8 ; posiicion de lectura de in_file
+		xor rax, rax
+		xor r12, r12 ; tendra todas las lineas que hay en la matriz 
+		xor r10, r10 ; fila actual en al cual se encuentra al matriz 
+		
+
+		read_line:
+			xor rcx, rcx 
+
+			removerBlancos:
+				cmp rcx, 0
+				if e 
+					xor rax, rax
+					mov al , [in_file + r8]
+					cmp al, 32 ; espacio en blanco 
+					if e 
+						inc r8 ; incrementara para seguir con el siguiente elemento del archivo 
+						jmp removerBlancos
+
+					else
+						cmp al, 10
+						if e
+							mov [line + rcx], al
+							inc r8
+							cmp r8, r9 
+							if e 
+								ret
+							endif
+							jmp duplicados
+						endif
+								
+							mov [line + rcx], al
+							inc rcx
+							inc r8	
+							jmp removerBlancos
+					endif
+				else 
+					xor rax, rax
+					mov al , [in_file + r8]
+					cmp al, 32 ; espacio en blanco 
+					if e 
+						xor rbx, rbx
+						mov bl , [in_file + r8 + 1]
+						cmp bl, 32 ; espacio en blanco 
+						if e 
+							inc r8
+							jmp removerBlancos
+						else 
+							cmp bl, 10
+							if e
+								mov [line + rcx], bl
+								inc r8
+								cmp r8, r9 
+								if e 
+									ret
+								endif
+								jmp duplicados
+							endif
+									
+								mov [line + rcx], al
+								inc rcx
+								inc r8	
+								jmp removerBlancos
+						endif
+					else 
+							cmp al, 10
+							if e
+								mov [line + rcx], al
+								inc r8
+								cmp r8, r9 
+								if e 
+									ret
+								endif
+								jmp duplicados
+							endif
+									
+								mov [line + rcx], al
+								inc rcx
+								inc r8	
+								jmp removerBlancos
+					endif
+				endif 
+
+
+			
+			
+	agregarMatriz:
+		xor rcx, rcx
+		mov rdi, r10
+
+			
+		auxAgregarMatriz:
+			mov al, [line + rcx]
+			cmp al, 10 ; comparacion de cambio de linea 
+			if e 
+				cmp rcx, 0 ; esto quiere decir que en line solo existe el cambio de linea entonces
+							; no se tomara en cuenta enla matriz 
+				if e 
+					jmp read_line
+				endif
+				mov byte [MATRIZ + rdi], al
+				add r10, MatrizMax
+				inc r12 ; cantidad de lineas en al matriz jijijijjijijiji
+				write strNum, strNumlen
+				jmp read_line
+			endif 
+			mov byte [MATRIZ + rdi], al
+			inc rcx
+			inc rdi
+			jmp auxAgregarMatriz 
+			
+			
+
+	duplicados:
+		xor rcx, rcx 
+		xor rax, rax
+		cmp r12, 0 ; esto nos dira si hay algun elemento en la matriz 
+		if e 
+			jmp agregarMatriz
+
+		else
+			mov rdi, 0
+			mov rbx, 0 ; contara el maximo de la matriz 
+			xor r15, r15 ; contara las iteraciones
+			duplicadoMatriz:
+				mov rdi, rbx
+				auxDuplicado:
+					mov al, [line + rcx]
+					cmp [MATRIZ + rdi], al
+					if e
+						cmp byte [line + rcx + 1], 10 ; esto se hara ya que si se acaba primero una cadena antes que otra
+						if e
+							cmp byte [MATRIZ + rdi + 1], 10 ; esto significa que son iguales 
+							if e 
+								jmp read_line
+							else 
+								add rbx, MatrizMax
+								inc r15
+								jmp duplicadoMatriz
+							endif 
+						else
+							inc rcx
+							inc rdi 
+							jmp auxDuplicado
+						endif 
+					else
+						inc r15
+						cmp r15, r12
+						if e 
+							jmp agregarMatriz
+						endif 
+						add rbx, MatrizMax
+						jmp duplicadoMatriz
+					endif 
+		endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+itoa:
+	push rcx
+	push rax
+	push rbx 
+	mov rcx, 3;Len del buffer del caracter
+	mov rax, rsi ;Número en entero
+	mov rbx, 10 
+	
+	convert:
+		xor rdx, rdx
+		div rbx    ;Divide rax/rbx, en dl (rdx) queda el residuo de la división
+		add dl, '0'  ;Se convierte en caracter el número
+		mov [strNum + rcx - 1], dl ;Se añade el caracter en la última posición
+
+		dec rcx ;Se una posición a la izquierda del buffer
+		cmp rax, 0 ;Sí el cociente es 0, ya terminó de dividir el número
+		jne convert  ;Sino, siga iterando
+		
+		pop rbx
+		pop rax
+		pop rcx
+
+		ret
