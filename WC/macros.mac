@@ -42,7 +42,6 @@
     ;;         %2 is the length of the input
     ;;
 	%macro read 2
-		push rax
 		push rdi
 		push rsi
 		push rdx
@@ -61,7 +60,6 @@
 		pop rdx
 		pop rsi
 		pop rdi
-		pop rax
 
 	%endmacro
     ;;
