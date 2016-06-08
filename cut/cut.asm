@@ -15,99 +15,130 @@
 ; section containing initialized data
 
 section .data
-	; Tamanio máximo
 	MAXIMO equ 2048
+	len equ 100
+	nuevaLinea	db 0xa	
 
-	cantidad_lineas: db 10, 'Cantidad de líneas: '
-		.len: equ $-cantidad_lineas
-	cantidad_bytes: db 10, 'Cantidad de bytes: '
-		.len: equ $-cantidad_bytes
-	cantidad_palabras: db 10, 'Cantidad de palabras: '
-		.len: equ $-cantidad_palabras
-	cambio_linea: db 10
-		.len: equ $-cambio_linea
-
-
-; Sección datos no inicializados
+	errorParam0: db 10, 'Error: No se han ingresado parametros', 10, 10
+		.len: equ $-errorParam0
+	errorParam1: db 10, 'Error: faltan parámetros por ingresar', 10, 10
+		.len: equ $-errorParam1
 
 section .bss
-	in_file resb MAXIMO
+
 	numero resb 2048
 
-section .text
+	parametro: resb parametroLen
+	parametroLen equ 100
 
-GLOBAL _start
+	archivo: resb archivoLen
+	archivoLen equ 100
+
+section .text
+global	_start
 
 _start:
-	input_file:
-		read in_file, MAXIMO
-		; Guarda el número total de caracteres
-		mov r9, rax
-		; Verifica si archivo esta vacio.
-		cmp r9, 0
-		; Si esta vacio, salta a imprimir.
-		if e
-			jmp print
-		endif
-		; Índice para el buffer de caracteres (in_file)
-		xor r8, r8
-		; Contador de líneas
-		xor r13, r13
-		; Contador de Palabras
-		xor r14, r14
 
-	scan:
-		; Verifica cuando hay una nueva palabra.
-		cmp byte[in_file + r8], ' '
-		if e
-			inc r14
-		endif
+;**********************************************************************************
+;
+; guardar: Lee los argumentos de la consola y guarda el nombre del archivo en el buffer archivo y
+; 		   los parámetros en el buffer parametro
+;
+;**********************************************************************************
 
-		; Verifica cuando hay una nueva línea.
-		cmp byte[in_file + r8], 10
-		if e
-			cmp byte[in_file + r8 + 1], 10
-			if e
-				inc r13
-			else
-				inc r8
-				cmp r8, r9
-				if e
-					inc r13
-				else
-					inc r13
-					inc r14
-				endif
-				dec r8
-			endif
-		endif
-
-	next:
-		; Si llega al final del archivo, el programa termina
-		cmp r8, r9		
-		if e
-			; Agrega ultima linea y palabra.
-			inc r13
-			inc r14
-			jmp print
-		else
-			inc r8
-			jmp scan
-		endif
-
-	print:
-		write cantidad_lineas, cantidad_lineas.len
-		mov r10, r13
-		call itoa
-		write cantidad_bytes, cantidad_bytes.len
-		mov r10, r8
-		call itoa
-		write cantidad_palabras, cantidad_palabras.len
-		mov r10, r14
-		call itoa
-		write cambio_linea, cambio_linea.len
-		write cambio_linea, cambio_linea.len
+guardar:
+	; Guarda el número de argumentos de la pila en r8
+	pop	r8
+	; Guarda el nombre del ejecutable en r15 (No lo necesitaremos)
+	pop r15
+	; Resta 1 a r8 dado a que el nombre del ejecutable se cuenta como un argumento
+	;dec r8
+	; Creamos el contador de arumentos de la pila
+	mov r9, 0
+	;Comparamos r8 con cero, para verificar si hay argumentos
+	cmp r8, 0
+	if e
+		write errorParam0, errorParam0.len
 		exit
+	else
+		cmp r8, 1
+		if e
+			write errorParam1, errorParam1.len
+			exit
+		endif
+	endif
+
+	; Ciclo que itera cada argumento
+	loop:
+		inc r9
+		; Compara r9 con r8 a ver si ya llegó al final de los argumentos
+		cmp r8, r9
+		if e
+			write archivo, archivoLen
+			write nuevaLinea, 1
+			write parametro, parametroLen
+			write nuevaLinea, 1
+			exit
+		endif
+
+	; Saca el argumento a revisar
+	argumentos:
+		pop rsi
+
+	cmp r9, 1
+	if e
+		call guardarArchivo
+	else
+		call guardarArg
+	endif
+
+	jmp loop
+
+	; Se guada el nombre del archivo de texto en el buffer archivo
+	guardarArchivo:
+
+		push rbx
+		push rsi
+		push rax
+
+		mov rbx, 0
+		.archivo_loop:
+			cmp byte [rsi+rbx], 0
+			je .archivo_exit
+			mov al, [rsi+rbx]
+			mov [archivo+rbx], al
+			inc rbx
+			jmp .archivo_loop
+
+		.archivo_exit:
+			pop rax
+			pop rsi
+			pop rbx		
+			ret
+
+	; Se guarda los argumentos en el buffer argumento
+	guardarArg:
+
+	;;TODO: HACER QUE EL BUFFER NO SE LIMPIE SOLO (NO ACTUALIZAR EL CONTADOR DE ALGUNA MANERA)
+
+		push rbx
+		push rsi
+		push rax
+
+		mov rbx, 0
+		.arg_loop:
+			cmp byte [rsi+rbx], 0
+			je .arg_exit
+			mov al, [rsi+rbx]
+			mov [parametro+rbx], al
+			inc rbx
+			jmp .arg_loop
+
+		.arg_exit:
+			pop rax
+			pop rsi
+			pop rbx
+			ret
 
 	itoa:
 		push rax
@@ -117,7 +148,7 @@ _start:
 		mov rcx, 2047
 		mov rax, r10
 		
-		loop:
+		loop_itoa:
 			xor rdx, rdx
 			mov r15, 10
 			div r15
@@ -133,5 +164,5 @@ _start:
 				clean_buffer numero
 				ret
 			else
-				jmp loop
+				jmp loop_itoa
 			endif
