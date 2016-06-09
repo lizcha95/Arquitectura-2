@@ -56,45 +56,91 @@ _start:
 		; Contador de Palabras
 		xor r14, r14
 
-	scan:
-		; Verifica cuando hay una nueva palabra.
-		cmp byte[in_file + r8], ' '
+	lineas:
+		cmp r9, r8
 		if e
-			inc r14
-		endif
-
-		; Verifica cuando hay una nueva línea.
-		cmp byte[in_file + r8], 10
-		if e
-			cmp byte[in_file + r8 + 1], 10
+			jmp palabras
+		else
+			cmp byte[in_file + r8], 10
 			if e
 				inc r13
+				inc r8
+				jmp lineas
 			else
 				inc r8
-				cmp r8, r9
-				if e
-					inc r13
-				else
-					inc r13
-					inc r14
-				endif
-				dec r8
+				jmp lineas
 			endif
 		endif
 
-	next:
-		; Si llega al final del archivo, el programa termina
-		cmp r8, r9		
+	palabras:
+		cmp r9, r8
 		if e
-			; Agrega ultima linea y palabra.
-			inc r13
-			inc r14
 			jmp print
 		else
-			inc r8
-			jmp scan
+			cmp byte[in_file + r8], ' '
+			if e
+				inc r8
+				jmp palabras
+			else
+				cmp byte[in_file + r8], 10	
+				if e
+					cmp byte[in_file + r8 - 1], ' '
+					if ne
+						inc r14
+						inc r8
+						jmp palabras
+					else
+						inc r8
+						jmp palabras
+					endif
+				else		
+					inc r14
+					inc r8
+					jmp palabras
+				endif
+			endif
 		endif
 
+	revisar_char:
+		cmp r9, r8
+		je print
+
+		cmp byte[in_file + r8], ' '
+		if e
+			loop_char:
+				cmp byte[in_file + r8 + 1], ' '
+					if e
+						inc r8
+						jmp loop_char
+					else
+						cmp byte[in_file + r8 + 1], 10
+						if e
+							inc r13
+							inc r8
+							jmp loop_char
+						else
+							cmp byte[in_file + r8 + 1], ''
+							if e
+								;inc r14
+								inc r13
+								inc r8
+								jmp print
+							else		
+								inc r8
+								jmp revisar_char
+							endif
+						endif
+					endif
+		else
+			 cmp byte[in_file + r8], 10
+			 if e
+			 	inc r13
+			endif
+		endif
+
+	 	inc r8
+	 	jmp revisar_char
+		
 	print:
 		write cantidad_lineas, cantidad_lineas.len
 		mov r10, r13
