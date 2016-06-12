@@ -99,7 +99,10 @@ _start:
 		endif 
 		read_line:
 			xor rcx, rcx 
-
+			cmp r8, r9 
+			if e 
+			ret
+			endif 
 			removerBlancos:
 				cmp rcx, 0
 				if e 
@@ -211,21 +214,25 @@ _start:
 					else 
 							cmp al, 10
 							if e
+								mov [strNum] , al 
+
 								inc r13
 								mov [line + rcx], al
 								inc r8
+								write strNum, strNumlen
 								cmp r8, r9 
 								if e 
-									inc r14
-									ret
+									jmp agregarMatriz
 								endif
-								jmp agregarMatriz
-							endif
-									
+								
+							
+							else 		
 								mov [line + rcx], al
 								inc rcx
 								inc r8	
+
 								jmp removerBlancos
+							endif 
 					endif
 				endif 
 
