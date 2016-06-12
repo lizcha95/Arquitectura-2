@@ -9,24 +9,20 @@
 ;* 				Izcar Muñoz 2015069773					*
 ;********************************************************
 
-
-; include macros library
+;**********************************************************************
+; Macros Incluídas
 ;**********************************************************************
 
 %include 'macros.mac'
 
-
-
-; section containing initialized data
+;**********************************************************************
+; Datos Inicializados
 ;**********************************************************************
 
 section .data
-	;; numeric constants
+	; Máximo del Archivo
 	MAX_FILE_SZ equ 2048 
-	;; two dots
-	DOTS db ':'
-	;; new line
-	NEW_LINE db 10
+
 	cantidad_lineas: db 10, 'Cantidad de líneas: '
 		.len: equ $-cantidad_lineas
 	cantidad_bytes: db 10, 'Cantidad de bytes: '
@@ -35,6 +31,13 @@ section .data
 		.len: equ $-cantidad_palabras
 	cambio_linea: db 10
 		.len: equ $-cambio_linea
+
+	errorParam0: db 10, 'Error: No se han ingresado parametros', 10, 10
+		.len: equ $-errorParam0
+
+;**********************************************************************
+; Datos No Inicializados
+;**********************************************************************
 
 section .bss
 	in_file resb MAX_FILE_SZ
@@ -49,19 +52,90 @@ section .bss
 	strNumlen equ 3
 	bandera resb 1
 	contador equ 1024
+
+	numero resb 2048
+
+	archivo: resb archivoLen
+	archivoLen equ 100
+
+	argN: resq 1
+	args: resb 2000
+	argDir: resq 10
 	
-
-
 ;; **********************************************************************
-;; section containing code
+;; Código
 ;; **********************************************************************
+
 section .text
 	global _start
 _start:
 	input_file:
-		read in_file, MAX_FILE_SZ
-		xor r10, r10 ; posicion de la matriz
+		; Guarda el número de argumentos de la pila en r8
+		pop	r8
+		; Guarda el nombre del ejecutable en r15 (No lo necesitaremos)
+		pop r15
+
+		;Comparamos r8 con cero, para verificar si hay argumentos
+		cmp r8, 0
+		if e
+			write errorParam0, errorParam0.len
+			exit
+		endif
+
+		; saca el nombre del archivo a revisar
+		pop rsi
+
+		; Función para agarrar el nombre del archivo de la línea de comandos
+		call guardarArchivo
+
+		; Se abre el archivo
+		mov rax, 2
+		mov rdi, archivo ;el nombre del file tiene que ser terminado con un 0
+		mov rsi, 0 ; 0 es read only
+		mov rdx, 0644 ;flags	
+		syscall
+
+		mov rdi, rax ; el file handle
+		mov rax, 0 ; para leer input
+		mov rsi, in_file
+		mov rdx, MAX_FILE_SZ
+		syscall
+
+		mov r9, rax
+
+		mov rax, 3
+		mov rdi, rax
+		syscall
+
+		;write in_file, MAX_FILE_SZ
+
+		xor r10, r10
 		call ProcesarArchivo
+		call final
+
+		; Se guada el nombre del archivo de texto en el buffer archivo
+		guardarArchivo:
+
+			push rbx
+			push rsi
+			push rax
+
+			mov rbx, 0
+			.archivo_loop:
+				cmp byte [rsi+rbx], 0
+				je .archivo_exit
+				mov al, [rsi+rbx]
+				mov [archivo+rbx], al
+				inc rbx
+				jmp .archivo_loop
+
+			.archivo_exit:
+				pop rax
+				pop rsi
+				pop rbx		
+				ret
+
+	final:
 		write cantidad_lineas, cantidad_lineas.len
 		mov rsi, r13
 		clean_buffer strNum
@@ -78,15 +152,11 @@ _start:
 		call itoa
 		write strNum, strNumlen
 		write cambio_linea, cambio_linea.len
-		write cambio_linea, cambio_linea.len
-		
-			
+		write cambio_linea, cambio_linea.len	
 	exit
-
-		 
+ 
 	ProcesarArchivo:
 
-		mov r9, rax
 		xor r8, r8 ; posiicion de lectura de in_file
 		xor rax, rax
 		xor r13,r13 ; lineas
@@ -99,10 +169,11 @@ _start:
 		endif 
 		read_line:
 			xor rcx, rcx 
-			cmp r8, r9 
-			if e 
+			cmp r8, r9
+			if e
 			ret
 			endif 
+
 			removerBlancos:
 				cmp rcx, 0
 				if e 
@@ -118,7 +189,6 @@ _start:
 					if e 
 						inc r8 ; incrementara para seguir con el siguiente elemento del archivo 
 						jmp removerBlancos
-
 					else
 						cmp al, 10
 						if e
@@ -131,7 +201,7 @@ _start:
 							endif
 							jmp agregarMatriz
 						endif
-								
+							
 							mov [line + rcx], al
 							inc rcx
 							inc r8	
@@ -214,31 +284,19 @@ _start:
 					else 
 							cmp al, 10
 							if e
-								mov [strNum] , al 
-
 								inc r13
 								mov [line + rcx], al
 								inc r8
-								write strNum, strNumlen
-								cmp r8, r9 
-								if e 
-									jmp agregarMatriz
-								endif
-								
-							
-							else 		
+								jmp agregarMatriz
+							endif
+									
 								mov [line + rcx], al
 								inc rcx
 								inc r8	
-
 								jmp removerBlancos
-							endif 
 					endif
 				endif 
 
-
-			
-			
 	agregarMatriz:
 		xor rcx, rcx
 		mov rdi, r10
@@ -273,12 +331,6 @@ _start:
 				jmp auxAgregarMatriz 
 			endif
 			jmp auxAgregarMatriz 
-
-			
-			
-		
-
-
 
 itoa:
 	push rcx
