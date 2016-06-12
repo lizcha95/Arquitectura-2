@@ -509,8 +509,10 @@ siguienteLinea2:
 								inc r8
 								cmp r8, r9 
 								if e 
-									ret
+									jmp duplicados
 								endif
+									
+								
 								jmp duplicados
 							endif
 									
