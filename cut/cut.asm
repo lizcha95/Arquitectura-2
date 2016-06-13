@@ -21,6 +21,9 @@ section .data
 	errorCantArgs db 10, 'Cantidad invalida de argumentos.', 10, 10
 		.len: equ $ - errorCantArgs
 
+	archivoVacio db 10, 'Archivo esta vacio.', 10, 10
+		.len: equ $ - archivoVacio
+
 	; Nueva linea.
 	nuevaLinea db 10
 		.len: equ $ - nuevaLinea
@@ -215,6 +218,12 @@ section .text
 				mov rsi, in_file
 				mov rdx, MAXIMO
 				syscall
+
+				cmp rax, 0
+				if e
+					write archivoVacio, archivoVacio.len
+					exit
+				endif
 
 			; Cerrar archivo.
 			cerrar_archivo:
