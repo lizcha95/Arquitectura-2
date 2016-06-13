@@ -53,15 +53,9 @@ section .bss
 	bandera resb 1
 	contador equ 1024
 
-	numero resb 2048
-
 	archivo: resb archivoLen
 	archivoLen equ 100
 
-	argN: resq 1
-	args: resb 2000
-	argDir: resq 10
-	
 ;; **********************************************************************
 ;; Código
 ;; **********************************************************************
