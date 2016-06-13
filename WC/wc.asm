@@ -49,7 +49,7 @@ section .bss
 	MATRIZLEN equ 1000000
 	MatrizMax equ 1000		; tamaño de cada linea de la matriz 
 	strNum resb strNumlen
-	strNumlen equ 3
+	strNumlen equ 4
 	bandera resb 1
 	contador equ 1024
 
@@ -336,7 +336,7 @@ itoa:
 	push rcx
 	push rax
 	push rbx 
-	mov rcx, 3;Len del buffer del caracter
+	mov rcx, 4;Len del buffer del caracter
 	mov rax, rsi ;Número en entero
 	mov rbx, 10 
 	
